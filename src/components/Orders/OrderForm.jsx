@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import {Box, Button, InputLabel, MenuItem, Select, TextField} from '@material-ui/core';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
-// import OrderDetailModal from './OrderDetailForm';
 import {getAllProducts} from "../../api/products";
 const OrderForm = ({ order: initialOrder }) => {
 
@@ -35,10 +34,7 @@ const OrderForm = ({ order: initialOrder }) => {
         setCurrentDate(date);
         setOrder((prevOrder) => ({
             ...prevOrder,
-            date: date,
-            finalPrice: 0,
-            numberOfProducts: 0,
-            status: prevOrder.status,
+            orderDetails: []
         }));
     }, []);
 
