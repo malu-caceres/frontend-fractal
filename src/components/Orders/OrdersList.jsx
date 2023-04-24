@@ -71,7 +71,7 @@ const OrdersList = () => {
                                     <TableCell>
                                         <Button
                                             component={Link}
-                                            to={`/edit-order/${order.id}`}
+                                            to={`/add-order/${order.id}`}
                                             variant="contained"
                                             color="primary"
                                         >
