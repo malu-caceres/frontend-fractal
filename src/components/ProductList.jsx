@@ -1,146 +1,110 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Table, TableHead, TableBody, TableRow, TableCell, IconButton } from '@material-ui/core';
-import { Add, Edit, Delete, Save, Cancel } from '@material-ui/icons';
-import ProductForm from './ProductForm.jsx';
+import { Link } from 'react-router-dom';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@material-ui/core';
+import { getAllProducts, deleteProduct } from '../api/products';
 
-function ProductList() {
+const ProductList = () => {
     const [products, setProducts] = useState([]);
-    const [editingProductId, setEditingProductId] = useState(null);
-    const [confirmDeleteProductId, setConfirmDeleteProductId] = useState(null);
-    const [showNewProductForm, setShowNewProductForm] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+
+    const loadProducts = async () => {
+        const allProducts = await getAllProducts();
+        setProducts(allProducts);
+    };
+
+    const handleProductDeleted = async (deletedProduct) => {
+        await deleteProduct(deletedProduct.id);
+        const remainingProducts = products.filter((p) => p.id !== deletedProduct.id);
+        setProducts(remainingProducts);
+        handleCloseModal();
+    };
+
+    const handleDeleteButtonClick = (product) => {
+        setSelectedProduct(product);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedProduct(null);
+        setModalOpen(false);
+    };
 
     useEffect(() => {
-        axios
-            .get('http://localhost:8082/api/products')
-            .then(response => {
-                setProducts(response.data);
-            })
-            .catch(error => {
-                console.error('Error retrieving products: ', error);
-            });
+        loadProducts();
     }, []);
-
-    const handleEditProduct = (product) => {
-        setEditingProductId(product.id);
-    };
-
-    const handleSaveProduct = (product) => {
-        axios
-            .put(`http://localhost:8082/api/products/${product.id}`, product)
-            .then(response => {
-                setProducts(products.map(p => p.id === product.id ? response.data : p));
-                setEditingProductId(null);
-            })
-            .catch(error => {
-                console.error('Error updating product: ', error);
-            });
-    };
-
-    const handleCancelEdit = () => {
-        setEditingProductId(null);
-    };
-
-    const handleDeleteProduct = () => {
-        axios
-            .delete(`http://localhost:8082/api/products/${confirmDeleteProductId}`)
-            .then(() => {
-                setProducts(products.filter(p => p.id !== confirmDeleteProductId));
-                setConfirmDeleteProductId(null);
-            })
-            .catch(error => {
-                console.error('Error deleting product: ', error);
-            });
-    };
-
-    const handleConfirmDelete = () => {
-        axios
-            .delete(`http://localhost:8082/api/products/${confirmDeleteProductId}`)
-            .then(() => {
-                setProducts(products.filter(p => p.id !== confirmDeleteProductId));
-                setConfirmDeleteProductId(null);
-            })
-            .catch(error => {
-                console.error('Error deleting product: ', error);
-            });
-    };
-
-    const handleCancelDelete = () => {
-        setConfirmDeleteProductId(null);
-    };
-
-    const handleCreateProduct = (product) => {
-        axios
-            .post('http://localhost:8082/api/products', product)
-            .then(response => {
-                setProducts([...products, response.data]);
-                setShowNewProductForm(false);
-            })
-            .catch(error => {
-                console.error('Error creating product: ', error);
-            });
-    };
 
     return (
         <div>
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Unit Price</TableCell>
-                        <TableCell>Stock</TableCell>
-                        <TableCell></TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {products.map(product => (
-                        <TableRow key={product.id}>
-                            {editingProductId === product.id ? (
-                                <React.Fragment>
-                                    <TableCell>
-                                        <input type="text" value={product.name} onChange={e => setProducts(products.map(p => p.id === product.id ? { ...p, name: e.target.value } : p))} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <input type="number" value={product.unitPrice} onChange={e => setProducts(products.map(p => p.id === product.id ? { ...p, unitPrice: e.target.value } : p))} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <input type="number" value={product.stock} onChange={e => setProducts(products.map(p => p.id === product.id ? { ...p, stock: e.target.value } : p))} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <IconButton onClick={() =>handleSaveProduct(product)}><Save /></IconButton>
-                                        <IconButton onClick={handleCancelEdit}><Cancel /></IconButton>
-                                    </TableCell>
-                                </React.Fragment>
-                            ) : (
-                                <React.Fragment>
+            <Box mt={2}>
+                <h1>My Products</h1>
+                <Button
+                    component={Link}
+                    to="/add-product"
+                    variant="contained"
+                    color="primary"
+                >
+                    Add New Product
+                </Button>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>ID</TableCell>
+                                <TableCell>Name</TableCell>
+                                <TableCell>Unit Price</TableCell>
+                                <TableCell>Stock</TableCell>
+                                <TableCell>Options</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {products.map((product) => (
+                                <TableRow key={product.id}>
+                                    <TableCell>{product.id}</TableCell>
                                     <TableCell>{product.name}</TableCell>
                                     <TableCell>{product.unitPrice}</TableCell>
                                     <TableCell>{product.stock}</TableCell>
                                     <TableCell>
-                                        <IconButton onClick={() => handleEditProduct(product)}><Edit /></IconButton>
-                                        <IconButton onClick={() => setConfirmDeleteProductId(product.id)}><Delete /></IconButton>
+                                        <Button
+                                            component={Link}
+                                            to={`/edit-product/${product.id}`}
+                                            variant="contained"
+                                            color="primary"
+                                        >
+                                            Edit
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            color="secondary"
+                                            onClick={() => handleDeleteButtonClick(product)}
+                                        >
+                                            Delete
+                                        </Button>
                                     </TableCell>
-                                </React.Fragment>
-                            )}
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-            {editingProductId === null && !showNewProductForm && (
-                <IconButton onClick={() => setShowNewProductForm(true)}><Add /></IconButton>
-            )}
-            {showNewProductForm && (
-                <ProductForm onCancel={() => setShowNewProductForm(false)} onSave={handleCreateProduct} />
-            )}
-            {confirmDeleteProductId !== null && (
-                <div>
-                    <p>Are you sure you want to delete this product?</p>
-                    <IconButton onClick={handleDeleteProduct}><Delete /></IconButton>
-                    <IconButton onClick={handleCancelDelete}><Cancel /></IconButton>
-                </div>
-            )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
+            <Dialog open={modalOpen} onClose={handleCloseModal}>
+                <DialogTitle>{`Delete Product ${selectedProduct?.id}`}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete the product "{selectedProduct?.name}"?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={() => handleProductDeleted(selectedProduct)} color="secondary" autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
-}
+};
 
 export default ProductList;
