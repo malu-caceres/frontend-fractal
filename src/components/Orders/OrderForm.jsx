@@ -130,6 +130,9 @@ const OrderForm = ({ order: initialOrder }) => {
                     required
                     fullWidth
                     margin="normal"
+                    InputProps={{
+                        readOnly: !isEdit,
+                    }}
                 >
                     {statusOptions.map((status) => (
                         <MenuItem key={status} value={status}>
