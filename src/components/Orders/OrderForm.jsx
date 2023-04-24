@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { Box, Button, TextField } from '@material-ui/core';
+import {Box, Button, InputLabel, MenuItem, Select, TextField} from '@material-ui/core';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
-import OrderDetailModal from './OrderDetailForm';
+// import OrderDetailModal from './OrderDetailForm';
 import {getAllProducts} from "../../api/products";
 const OrderForm = ({ order: initialOrder }) => {
+
+    const statusOptions = ['Pending', 'InProgress', 'Completed'];
+    const [selectedStatus, setSelectedStatus] = useState('');
     const history = useHistory();
     const { id } = useParams();
     const [order, setOrder] = useState(initialOrder || {
         orderNumber: '',
+        status: 'Pending',
     });
     const isEdit = id !== undefined;
     const [currentDate, setCurrentDate] = useState('');
@@ -34,9 +38,18 @@ const OrderForm = ({ order: initialOrder }) => {
             date: date,
             finalPrice: 0,
             numberOfProducts: 0,
+            status: prevOrder.status,
         }));
     }, []);
 
+    const handleStatusChange = (event) => {
+        const { value } = event.target;
+        setSelectedStatus(value);
+        setOrder((prevOrder) => ({
+            ...prevOrder,
+            status: value,
+        }));
+    };
     const handleInputChange = (event) => {
         const { name, value } = event.target;
         setOrder((prevOrder) => ({
@@ -102,10 +115,29 @@ const OrderForm = ({ order: initialOrder }) => {
                     name="finalPrice"
                     type="number"
                     value={order.finalPrice}
-                    onChange={handleInputChange}
+                    InputProps={{
+                        readOnly: true,
+                    }}
                     fullWidth
                     margin="normal"
                 />
+                <TextField
+                    label="Status"
+                    name="status"
+                    select
+                    value={order.status}
+                    onChange={handleInputChange}
+                    required
+                    fullWidth
+                    margin="normal"
+                >
+                    {statusOptions.map((status) => (
+                        <MenuItem key={status} value={status}>
+                            {status}
+                        </MenuItem>
+                    ))}
+                </TextField>
+
                 <Button type="submit" variant="contained" color="primary">
                     {isEdit ? 'Save Changes' : 'Add Order'}
                 </Button>

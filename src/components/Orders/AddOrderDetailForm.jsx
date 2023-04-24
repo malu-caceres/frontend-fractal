@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {getAllProducts} from "../../api/products";
 import { TextField, Select, MenuItem, InputLabel, FormControl, Button } from '@material-ui/core';
 
-const OrderDetailForm = ({ onAddOrderDetail }) => {
+const AddOrderDetailForm = ({ onAddOrderDetail }) => {
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState('');
     const [quantity, setQuantity] = useState('');
@@ -50,7 +50,7 @@ const OrderDetailForm = ({ onAddOrderDetail }) => {
                     </MenuItem>
                     {products.map((product) => (
                         <MenuItem key={product.id} value={product.id}>
-                            {product.name} - {product.price}
+                            {product.name}
                         </MenuItem>
                     ))}
                 </Select>
@@ -70,4 +70,4 @@ const OrderDetailForm = ({ onAddOrderDetail }) => {
     );
 };
 
-export default OrderDetailForm;
+export default AddOrderDetailForm;

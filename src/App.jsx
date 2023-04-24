@@ -4,6 +4,7 @@ import ProductList from "./components/Product/ProductList";
 import OrdersList from "./components/Orders/OrdersList";
 import ProductForm from "./components/Product/ProductForm";
 import OrderForm from "./components/Orders/OrderForm";
+import OrderDetailForm from "./components/Orders/AddOrderDetailForm";
 
 function App() {
     return (
@@ -21,6 +22,9 @@ function App() {
                     </Route>
                     <Route path="/add-order/:id?" exact>
                         <OrderForm />
+                    </Route>
+                    <Route path="/add-order-detail/:id?" exact>
+                        <OrderDetailForm />
                     </Route>
                     {/* Other routes can be defined here */}
                 </Switch>
