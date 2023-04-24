@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import ProductList from "./components/Product/ProductList";
 import OrdersList from "./components/Orders/OrdersList";
-import ProductForm from "./components/ProductForm";
+import ProductForm from "./components/Product/ProductForm";
 
 function App() {
     return (

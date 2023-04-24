@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { Box, Button, TextField } from '@material-ui/core';
-import { createProduct, getProductById, updateProduct } from '../api/products';
+import { createProduct, getProductById, updateProduct } from '../../api/products';
 
 const ProductForm = ({ product: initialProduct }) => {
     const history = useHistory();
