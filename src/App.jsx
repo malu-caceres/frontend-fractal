@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
-import ProductList from "./components/ProductList";
+import ProductList from "./components/Product/ProductList";
 import OrdersList from "./components/Orders/OrdersList";
 
 function App() {

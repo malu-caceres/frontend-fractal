@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@material-ui/core';
-import { getAllProducts, deleteProduct } from '../api/products';
+import { getAllProducts, deleteProduct } from '../../api/products';
 
 const ProductList = () => {
     const [products, setProducts] = useState([]);
