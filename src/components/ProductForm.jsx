@@ -1,70 +1,87 @@
-import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
 import { Box, Button, TextField } from '@material-ui/core';
-import { createProduct } from '../api/products';
+import { createProduct, getProductById, updateProduct } from '../api/products';
 
-const ProductForm = () => {
+const ProductForm = ({ product: initialProduct }) => {
     const history = useHistory();
-    const [name, setName] = useState('');
-    const [unitPrice, setUnitPrice] = useState('');
-    const [stock, setStock] = useState('');
+    const { id } = useParams();
+    const [product, setProduct] = useState(initialProduct || {
+        name: '',
+        unitPrice: '',
+        stock: '',
+    });
+    const isEdit = id !== undefined;
 
-    const handleNameChange = (event) => {
-        setName(event.target.value);
-    };
+    useEffect(() => {
+        const fetchProduct = async () => {
+            const product = await getProductById(id);
+            setProduct(product);
+        };
 
-    const handleUnitPriceChange = (event) => {
-        setUnitPrice(event.target.value);
-    };
+        if (isEdit) {
+            fetchProduct();
+        }
+    }, [id, isEdit]);
 
-    const handleStockChange = (event) => {
-        setStock(event.target.value);
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setProduct((prevProduct) => ({
+            ...prevProduct,
+            [name]: value,
+        }));
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        const newProduct = { name, unitPrice: Number(unitPrice), stock: Number(stock) };
-        await createProduct(newProduct);
+
+        if (isEdit) {
+            await updateProduct(id, product);
+        } else {
+            await createProduct(product);
+        }
+
         history.push('/products');
     };
 
     return (
-        <div>
+        <form onSubmit={handleSubmit}>
             <Box mt={2}>
-                <h1>Add Product</h1>
-                <form onSubmit={handleSubmit}>
-                    <TextField
-                        label="Name"
-                        fullWidth
-                        value={name}
-                        onChange={handleNameChange}
-                        margin="normal"
-                        required
-                    />
-                    <TextField
-                        label="Unit Price"
-                        fullWidth
-                        value={unitPrice}
-                        onChange={handleUnitPriceChange}
-                        margin="normal"
-                        type="number"
-                        required
-                    />
-                    <TextField
-                        label="Stock"
-                        fullWidth
-                        value={stock}
-                        onChange={handleStockChange}
-                        margin="normal"
-                        type="number"
-                        required
-                    />
-                    <Button type="submit" variant="contained" color="primary">
-                        Add
-                    </Button>
-                </form>
+                <h1>{isEdit ? 'Edit Product' : 'Add Product'}</h1>
+                <TextField
+                    label="Name"
+                    name="name"
+                    value={product.name}
+                    onChange={handleInputChange}
+                    required
+                    fullWidth
+                    margin="normal"
+                />
+                <TextField
+                    label="Unit Price"
+                    name="unitPrice"
+                    type="number"
+                    value={product.unitPrice}
+                    onChange={handleInputChange}
+                    required
+                    fullWidth
+                    margin="normal"
+                />
+                <TextField
+                    label="Stock"
+                    name="stock"
+                    type="number"
+                    value={product.stock}
+                    onChange={handleInputChange}
+                    required
+                    fullWidth
+                    margin="normal"
+                />
+                <Button type="submit" variant="contained" color="primary">
+                    {isEdit ? 'Save Changes' : 'Add Product'}
+                </Button>
             </Box>
-        </div>
+        </form>
     );
 };
 

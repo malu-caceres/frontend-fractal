@@ -67,7 +67,7 @@ const ProductList = () => {
                                     <TableCell>
                                         <Button
                                             component={Link}
-                                            to={`/edit-product/${product.id}`}
+                                            to={`/add-product/${product.id}`}
                                             variant="contained"
                                             color="primary"
                                         >

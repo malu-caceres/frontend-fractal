@@ -15,7 +15,9 @@ function App() {
                     <Route exact path="/my-orders">
                         <OrdersList />
                     </Route>
-                    <Route path="/add-product" component={ProductForm} />
+                    <Route path="/add-product/:id?" exact>
+                        <ProductForm />
+                    </Route>
                     {/* Other routes can be defined here */}
                 </Switch>
             </div>
