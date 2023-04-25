@@ -210,6 +210,9 @@ const OrderForm = ({ order: initialOrder }) => {
                     name="orderNumber"
                     value={order.orderNumber}
                     onChange={handleInputChange}
+                    InputProps={{
+                        readOnly: order.status === "Completed"
+                    }}
                     required
                     fullWidth
                     margin="normal"
@@ -234,7 +237,7 @@ const OrderForm = ({ order: initialOrder }) => {
                     fullWidth
                     margin="normal"
                     InputProps={{
-                        readOnly: !isEdit,
+                        readOnly: order.status === "Completed" || !isEdit,
                     }}
                 >
                     {statusOptions.map((status) => (
@@ -326,7 +329,7 @@ const OrderForm = ({ order: initialOrder }) => {
             </Box>
 
             {/*DELETE MODAL*/}
-            <Dialog open={modalDeleteOrderDetailOpen} onClose={handleCloseModal}>
+            <Dialog open={modalDeleteOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
                 <DialogTitle>{`Delete Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -345,7 +348,7 @@ const OrderForm = ({ order: initialOrder }) => {
 
 
             {/*UPDATE MODAL*/}
-            <Dialog open={modalUpdateOrderDetailOpen} onClose={handleCloseModal}>
+            <Dialog open={modalUpdateOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
                 <DialogTitle>{`Update Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -380,7 +383,7 @@ const OrderForm = ({ order: initialOrder }) => {
 
 
             {/*Add a new order detail*/}
-            <Dialog open={modalAddOrderDetailOpen} onClose={handleCloseModal}>
+            <Dialog open={modalAddOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
                 <DialogTitle>{`Add Order Detail`}</DialogTitle>
                 <DialogContent>
                     <InputLabel id="product-label">Product</InputLabel>

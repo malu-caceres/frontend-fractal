@@ -91,7 +91,7 @@ const OrdersList = () => {
                     </Table>
                 </TableContainer>
             </Box>
-            <Dialog open={modalOpen} onClose={handleCloseModal}>
+            <Dialog open={modalOpen  && selectedOrder.status !== "Completed"} onClose={handleCloseModal}>
                 <DialogTitle>{`Delete Order ${selectedOrder?.id}`}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
