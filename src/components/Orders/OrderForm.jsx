@@ -12,12 +12,13 @@ import {
 } from '@material-ui/core';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
 import {deleteProduct, getAllProducts} from "../../api/products";
-import {deleteOrderDetail} from "../../api/orderDetails";
+import {deleteOrderDetail, updateOrderDetail} from "../../api/orderDetails";
 const OrderForm = ({ order: initialOrder }) => {
 
     const statusOptions = ['Pending', 'InProgress', 'Completed'];
     const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
-    const [modalOpen, setModalOpen] = useState(false);
+    const [modalDeleteOrderDetailOpen, setModalDeleteOrderDetailOpen] = useState(false);
+    const [modalUpdateOrderDetailOpen, setModalUpdateOrderDetailOpen] = useState(false);
     const history = useHistory();
     const { id } = useParams();
     const [order, setOrder] = useState(initialOrder || {
@@ -50,9 +51,14 @@ const OrderForm = ({ order: initialOrder }) => {
         }));
     }, []);
 
-    const handleDeleteButtonClick = (orderDetail) => {
+    const handleDeleteOrderDetailButtonClick = (orderDetail) => {
         setSelectedOrderDetail(orderDetail);
-        setModalOpen(true);
+        setModalDeleteOrderDetailOpen(true);
+    };
+
+    const handleUpdateOrderDetailButtonClick = (orderDetail) => {
+        setSelectedOrderDetail(orderDetail);
+        setModalUpdateOrderDetailOpen(true);
     };
     const handleInputChange = (event) => {
         const { name, value } = event.target;
@@ -60,6 +66,17 @@ const OrderForm = ({ order: initialOrder }) => {
             ...prevOrder,
             [name]: value,
         }));
+    };
+
+    const handleOrderDetailInputChange = (event) => {
+        setSelectedOrderDetail((prevOrderDetail) => ({
+            ...prevOrderDetail,
+            orderId: order.id,
+            productId: selectedOrderDetail.product.id,
+            quantity: parseInt(event.target.value),
+        }));
+
+        console.log(selectedOrderDetail)
     };
 
     const handleSubmit = async (event) => {
@@ -77,7 +94,8 @@ const OrderForm = ({ order: initialOrder }) => {
 
     const handleCloseModal = () => {
         setSelectedOrderDetail(null);
-        setModalOpen(false);
+        setModalDeleteOrderDetailOpen(false);
+        setModalUpdateOrderDetailOpen(false);
     };
 
     const handleOrderDetailDeleted = async (deletedOrderDetail) => {
@@ -88,6 +106,25 @@ const OrderForm = ({ order: initialOrder }) => {
             numberOfProducts: remainingOrderDetails.length,
             orderDetails: remainingOrderDetails
         }));
+        handleCloseModal();
+    };
+
+    const handleOrderDetailUpdated = async (updatedOrderDetail) => {
+        console.log(updatedOrderDetail)
+        await updateOrderDetail(updatedOrderDetail.id,updatedOrderDetail);
+        setSelectedOrderDetail((prevOrderDetail) => ({
+            ...prevOrderDetail,
+            quantity: updatedOrderDetail.quantity,
+        }));
+        const changedObject = order.orderDetails.find(o => o.id === selectedOrderDetail.id)
+        const changedIndex = order.orderDetails.indexOf(changedObject)
+        console.log("dsfas",changedIndex)
+        order.orderDetails[changedIndex]=selectedOrderDetail
+        setOrder((prevOrder) => ({
+            ...prevOrder,
+            numberOfProducts: order.orderDetails.length,
+        }));
+
         handleCloseModal();
     };
 
@@ -156,17 +193,16 @@ const OrderForm = ({ order: initialOrder }) => {
                                     <TableCell>{orderDetail.product.unitPrice * orderDetail.quantity}</TableCell>
                                     <TableCell>
                                         <Button
-                                            component={Link}
-                                            to={`/add-order/${order.id}`}
                                             variant="contained"
                                             color="primary"
+                                            onClick={() => handleUpdateOrderDetailButtonClick(orderDetail)}
                                         >
                                             Edit
                                         </Button>
                                         <Button
                                             variant="contained"
                                             color="secondary"
-                                            onClick={() => handleDeleteButtonClick(orderDetail)}
+                                            onClick={() => handleDeleteOrderDetailButtonClick(orderDetail)}
                                         >
                                             Delete
                                         </Button>
@@ -211,7 +247,8 @@ const OrderForm = ({ order: initialOrder }) => {
                 </Button>
             </Box>
 
-            <Dialog open={modalOpen} onClose={handleCloseModal}>
+            {/*DELETE MODAL*/}
+            <Dialog open={modalDeleteOrderDetailOpen} onClose={handleCloseModal}>
                 <DialogTitle>{`Delete Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -228,6 +265,40 @@ const OrderForm = ({ order: initialOrder }) => {
                 </DialogActions>
             </Dialog>
 
+
+            {/*UPDATE MODAL*/}
+            <Dialog open={modalUpdateOrderDetailOpen} onClose={handleCloseModal}>
+                <DialogTitle>{`Update Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Product Name"
+                        name="name"
+                        value={selectedOrderDetail?.product.name}
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="Quantity"
+                        name="numberOfProducts"
+                        type="number"
+                        value={selectedOrderDetail?.quantity}
+                        onChange={handleOrderDetailInputChange}
+                        fullWidth
+                        margin="normal"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={() => handleOrderDetailUpdated(selectedOrderDetail)} color="secondary" autoFocus>
+                        Update
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </form>
     );
 };
