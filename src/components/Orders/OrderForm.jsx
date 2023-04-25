@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {Link, useHistory, useParams} from 'react-router-dom';
+import {useHistory, useParams} from 'react-router-dom';
 import {
     Box,
     Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
@@ -11,7 +11,6 @@ import {
     TextField
 } from '@material-ui/core';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
-import {deleteProduct, getAllProducts} from "../../api/products";
 import {deleteOrderDetail, updateOrderDetail} from "../../api/orderDetails";
 const OrderForm = ({ order: initialOrder }) => {
 
@@ -29,7 +28,6 @@ const OrderForm = ({ order: initialOrder }) => {
     });
     const isEdit = id !== undefined;
     const [currentDate, setCurrentDate] = useState('');
-    const [products, setProducts] = useState([]);
     useEffect(() => {
         const fetchOrder = async () => {
             const order = await getOrderById(id);
@@ -53,6 +51,7 @@ const OrderForm = ({ order: initialOrder }) => {
 
     const handleDeleteOrderDetailButtonClick = (orderDetail) => {
         setSelectedOrderDetail(orderDetail);
+        console.log(selectedOrderDetail)
         setModalDeleteOrderDetailOpen(true);
     };
 
@@ -101,28 +100,38 @@ const OrderForm = ({ order: initialOrder }) => {
     const handleOrderDetailDeleted = async (deletedOrderDetail) => {
         await deleteOrderDetail(deletedOrderDetail.id);
         const remainingOrderDetails = order.orderDetails.filter((p) => p.id !== deletedOrderDetail.id);
+        let newFinalPrice = 0
+        remainingOrderDetails.map((orderDetail) => (
+            newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
+        ))
         setOrder((prevOrder) => ({
             ...prevOrder,
             numberOfProducts: remainingOrderDetails.length,
-            orderDetails: remainingOrderDetails
+            orderDetails: remainingOrderDetails,
+            finalPrice: newFinalPrice
         }));
         handleCloseModal();
     };
 
     const handleOrderDetailUpdated = async (updatedOrderDetail) => {
+        updatedOrderDetail.orderId = order.id
+        updatedOrderDetail.productId = updatedOrderDetail.product.id
+
         console.log(updatedOrderDetail)
-        await updateOrderDetail(updatedOrderDetail.id,updatedOrderDetail);
-        setSelectedOrderDetail((prevOrderDetail) => ({
-            ...prevOrderDetail,
-            quantity: updatedOrderDetail.quantity,
-        }));
+        await updateOrderDetail(updatedOrderDetail.id, updatedOrderDetail);
+
+        let newFinalPrice = 0
+        order.orderDetails.map((orderDetail) => (
+            newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
+        ))
         const changedObject = order.orderDetails.find(o => o.id === selectedOrderDetail.id)
         const changedIndex = order.orderDetails.indexOf(changedObject)
-        console.log("dsfas",changedIndex)
+        console.log("dsfas",newFinalPrice)
         order.orderDetails[changedIndex]=selectedOrderDetail
         setOrder((prevOrder) => ({
             ...prevOrder,
             numberOfProducts: order.orderDetails.length,
+            finalPrice: newFinalPrice
         }));
 
         handleCloseModal();
@@ -184,7 +193,7 @@ const OrderForm = ({ order: initialOrder }) => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {order.orderDetails&&order.orderDetails.map((orderDetail) => (
+                            {order.orderDetails && order.orderDetails.map((orderDetail) => (
                                 <TableRow key={orderDetail.id}>
                                     <TableCell>{orderDetail.product.id}</TableCell>
                                     <TableCell>{orderDetail.product.name}</TableCell>

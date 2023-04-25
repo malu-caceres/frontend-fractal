@@ -19,8 +19,6 @@ export const createOrderDetail = async (newOrderDetail) => {
 
 export const updateOrderDetail = async (id, updatedOrderDetail) => {
   const response = await axios.put(`${API_URL}/${id}`, updatedOrderDetail);
-  // const response = await axios.put("http://localhost:8082/api/order-details/33", {"orderId": 30, "productId": 2, "quantity": 12});
-  console.log(response)
   return response.data;
 };
 
