@@ -65,8 +65,6 @@ const OrderForm = ({ order: initialOrder }) => {
     };
 
     const handleAddOrderDetailButtonClick = () => {
-
-        console.log("llego aki")
         setModalAddOrderDetailOpen(true);
     };
 
@@ -92,9 +90,6 @@ const OrderForm = ({ order: initialOrder }) => {
             }));
         }
         if (modalAddOrderDetailOpen){
-            console.log(selectedProduct)
-            console.log(selectedOrderDetail)
-            console.log(event)
             setSelectedOrderDetail((prevOrderDetail) => ({
                 ...prevOrderDetail,
                 orderId: order.id,
@@ -106,7 +101,6 @@ const OrderForm = ({ order: initialOrder }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
         if (isEdit) {
             await updateOrder(id, order);
         } else {
@@ -147,7 +141,6 @@ const OrderForm = ({ order: initialOrder }) => {
     const handleOrderDetailUpdated = async (updatedOrderDetail) => {
         updatedOrderDetail.orderId = order.id
         updatedOrderDetail.productId = updatedOrderDetail.product.id
-        console.log(updatedOrderDetail)
         await updateOrderDetail(updatedOrderDetail.id, updatedOrderDetail);
 
         const changedObject = order.orderDetails.find(o => o.id === selectedOrderDetail.id)
@@ -172,10 +165,9 @@ const OrderForm = ({ order: initialOrder }) => {
         if (isEdit){
             let newOrderDetail = {
                 orderId: order.id,
-                productId: selectedProduct,
+                productId: selectedProduct.id,
                 quantity: parseInt(selectedProductQuantity)
             }
-            console.log(newOrderDetail)
             newOrderDetail = await createOrderDetail(newOrderDetail);
             order.orderDetails.push(newOrderDetail)
 
@@ -190,8 +182,22 @@ const OrderForm = ({ order: initialOrder }) => {
             }));
             handleCloseModal();
         }
-
-
+        let newOrderDetail = {
+            productId: selectedProduct.id,
+            product: selectedProduct,
+            quantity: parseInt(selectedProductQuantity)
+        }
+        newOrderDetails.push(newOrderDetail)
+        let newFinalPrice = 0
+        newOrderDetails.map((orderDetail) => (
+            newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
+        ))
+        setOrder((prevOrder) => ({
+            ...prevOrder,
+            numberOfProducts: newOrderDetails.length,
+            finalPrice: newFinalPrice,
+            orderDetails: newOrderDetails
+        }));
         handleCloseModal();
     };
 
@@ -388,7 +394,7 @@ const OrderForm = ({ order: initialOrder }) => {
                             <em>Select a product</em>
                         </MenuItem>
                         {products.map((product) => (
-                            <MenuItem key={product.id} value={product.id}>
+                            <MenuItem key={product.id} value={product}>
                                 {product.name}
                             </MenuItem>
                         ))}
