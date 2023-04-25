@@ -14,17 +14,7 @@ import { createOrder, getOrderById, updateOrder } from '../../api/orders';
 import {deleteOrderDetail, updateOrderDetail, createOrderDetail} from "../../api/orderDetails";
 import {getAllProducts} from "../../api/products";
 const OrderForm = ({ order: initialOrder }) => {
-    const [products, setProducts] = useState([]);
-    const statusOptions = ['Pending', 'InProgress', 'Completed'];
-    const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
-    const [newOrderDetails, setNewOrderDetails] = useState([]);
-    const [modalDeleteOrderDetailOpen, setModalDeleteOrderDetailOpen] = useState(false);
-    const [modalUpdateOrderDetailOpen, setModalUpdateOrderDetailOpen] = useState(false);
-    const [modalAddOrderDetailOpen, setModalAddOrderDetailOpen] = useState(false);
-    const history = useHistory();
-    const { id } = useParams();
-    const [selectedProduct, setSelectedProduct] = useState('');
-    const [selectedProductQuantity, setSelectedProductQuantity] = useState('');
+    // GENERAL
     const [order, setOrder] = useState(initialOrder || {
         orderNumber: '',
         finalPrice: '0',
@@ -32,7 +22,24 @@ const OrderForm = ({ order: initialOrder }) => {
         status: 'Pending',
     });
     const isEdit = id !== undefined;
+    const statusOptions = ['Pending', 'InProgress', 'Completed'];
     const [currentDate, setCurrentDate] = useState('');
+    const history = useHistory();
+    const { id } = useParams();
+    const [products, setProducts] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState('');
+
+    //MODALS
+    const [modalDeleteOrderDetailOpen, setModalDeleteOrderDetailOpen] = useState(false);
+    const [modalUpdateOrderDetailOpen, setModalUpdateOrderDetailOpen] = useState(false);
+    const [modalAddOrderDetailOpen, setModalAddOrderDetailOpen] = useState(false);
+
+    // ADD ORDER DETAILS
+    const [newOrderDetails, setNewOrderDetails] = useState([]);
+    const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
+    const [selectedProductQuantity, setSelectedProductQuantity] = useState('');
+
+    // FUNCTIONS
     useEffect(() => {
         const fetchProducts = async () => {
             const productList = await getAllProducts();
@@ -59,6 +66,7 @@ const OrderForm = ({ order: initialOrder }) => {
         }));
     }, []);
 
+    // HANDLE BUTTONS
     const handleDeleteOrderDetailButtonClick = (orderDetail) => {
         setSelectedOrderDetail(orderDetail);
         setModalDeleteOrderDetailOpen(true);
@@ -72,6 +80,27 @@ const OrderForm = ({ order: initialOrder }) => {
         setSelectedOrderDetail(orderDetail);
         setModalUpdateOrderDetailOpen(true);
     };
+
+    // HANDLE INPUTS
+    // GENERAL
+    const handleProductChange = (event) => {
+        setSelectedProduct(event.target.value);
+    };
+    const handleProductQuantityChange = (event) => {
+        setSelectedProductQuantity(event.target.value);
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (isEdit) {
+            await updateOrder(id, order);
+        } else {
+            await createOrder(order);
+        }
+
+        history.push('/my-orders');
+    };
+
     const handleInputChange = (event) => {
         const { name, value } = event.target;
         setOrder((prevOrder) => ({
@@ -79,7 +108,14 @@ const OrderForm = ({ order: initialOrder }) => {
             [name]: value,
         }));
     };
+    const handleCloseModal = () => {
+        setModalDeleteOrderDetailOpen(false);
+        setModalUpdateOrderDetailOpen(false);
+        setModalAddOrderDetailOpen(false);
+    };
 
+
+    // ORDER DETAILS ACTIONS
     const handleOrderDetailInputChange = (event) => {
         if (modalUpdateOrderDetailOpen){
             setSelectedOrderDetail((prevOrderDetail) => ({
@@ -99,45 +135,46 @@ const OrderForm = ({ order: initialOrder }) => {
         }
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (isEdit) {
-            await updateOrder(id, order);
-        } else {
-            await createOrder(order);
+    const handleOrderDetailCreated = async () => {
+        if (isEdit){
+            let newOrderDetail = {
+                orderId: order.id,
+                productId: selectedProduct.id,
+                quantity: parseInt(selectedProductQuantity)
+            }
+            newOrderDetail = await createOrderDetail(newOrderDetail);
+            order.orderDetails.push(newOrderDetail)
+            // UPDATE MAIN ORDER INFO
+            let newFinalPrice = 0
+            order.orderDetails.map((orderDetail) => (
+                newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
+            ))
+            setOrder((prevOrder) => ({
+                ...prevOrder,
+                numberOfProducts: order.orderDetails.length,
+                finalPrice: newFinalPrice
+            }));
+            handleCloseModal();
         }
-
-        history.push('/my-orders');
-    };
-
-    const handleProductChange = (event) => {
-        setSelectedProduct(event.target.value);
-    };
-    const handleProductQuantityChange = (event) => {
-        setSelectedProductQuantity(event.target.value);
-    };
-    const handleCloseModal = () => {
-        setModalDeleteOrderDetailOpen(false);
-        setModalUpdateOrderDetailOpen(false);
-        setModalAddOrderDetailOpen(false);
-    };
-
-    const handleOrderDetailDeleted = async (deletedOrderDetail) => {
-        await deleteOrderDetail(deletedOrderDetail.id);
-        const remainingOrderDetails = order.orderDetails.filter((p) => p.id !== deletedOrderDetail.id);
+        let newOrderDetail = {
+            productId: selectedProduct.id,
+            product: selectedProduct,
+            quantity: parseInt(selectedProductQuantity)
+        }
+        newOrderDetails.push(newOrderDetail)
+        // UPDATE MAIN ORDER INFO
         let newFinalPrice = 0
-        remainingOrderDetails.map((orderDetail) => (
+        newOrderDetails.map((orderDetail) => (
             newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
         ))
         setOrder((prevOrder) => ({
             ...prevOrder,
-            numberOfProducts: remainingOrderDetails.length,
-            orderDetails: remainingOrderDetails,
-            finalPrice: newFinalPrice
+            numberOfProducts: newOrderDetails.length,
+            finalPrice: newFinalPrice,
+            orderDetails: newOrderDetails
         }));
         handleCloseModal();
     };
-
     const handleOrderDetailUpdated = async (updatedOrderDetail) => {
         updatedOrderDetail.orderId = order.id
         updatedOrderDetail.productId = updatedOrderDetail.product.id
@@ -161,50 +198,28 @@ const OrderForm = ({ order: initialOrder }) => {
         handleCloseModal();
     };
 
-    const handleOrderDetailCreated = async () => {
-        if (isEdit){
-            let newOrderDetail = {
-                orderId: order.id,
-                productId: selectedProduct.id,
-                quantity: parseInt(selectedProductQuantity)
-            }
-            newOrderDetail = await createOrderDetail(newOrderDetail);
-            order.orderDetails.push(newOrderDetail)
-
-            let newFinalPrice = 0
-            order.orderDetails.map((orderDetail) => (
-                newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
-            ))
-            setOrder((prevOrder) => ({
-                ...prevOrder,
-                numberOfProducts: order.orderDetails.length,
-                finalPrice: newFinalPrice
-            }));
-            handleCloseModal();
-        }
-        let newOrderDetail = {
-            productId: selectedProduct.id,
-            product: selectedProduct,
-            quantity: parseInt(selectedProductQuantity)
-        }
-        newOrderDetails.push(newOrderDetail)
+    const handleOrderDetailDeleted = async (deletedOrderDetail) => {
+        await deleteOrderDetail(deletedOrderDetail.id);
+        const remainingOrderDetails = order.orderDetails.filter((p) => p.id !== deletedOrderDetail.id);
         let newFinalPrice = 0
-        newOrderDetails.map((orderDetail) => (
+        remainingOrderDetails.map((orderDetail) => (
             newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
         ))
         setOrder((prevOrder) => ({
             ...prevOrder,
-            numberOfProducts: newOrderDetails.length,
-            finalPrice: newFinalPrice,
-            orderDetails: newOrderDetails
+            numberOfProducts: remainingOrderDetails.length,
+            orderDetails: remainingOrderDetails,
+            finalPrice: newFinalPrice
         }));
         handleCloseModal();
     };
 
     return (
         <form onSubmit={handleSubmit}>
+            {/*MAIN BOX*/}
             <Box mt={2}>
                 <h1>{isEdit ? 'Edit Order' : 'Add Order'}</h1>
+                {/*ORDER FIELDS*/}
                 <TextField
                     label="Order Number"
                     name="orderNumber"
@@ -247,6 +262,7 @@ const OrderForm = ({ order: initialOrder }) => {
                     ))}
                 </TextField>
                 <TableContainer>
+                    {/*ORDER DETAIL INFO*/}
                     <h3> Order's Products</h3>
                     <Table>
                         <TableHead>
@@ -296,8 +312,6 @@ const OrderForm = ({ order: initialOrder }) => {
                     </Button>
                 </TableContainer>
 
-
-
                 <TextField
                     label="Number of Products"
                     name="numberOfProducts"
@@ -322,67 +336,13 @@ const OrderForm = ({ order: initialOrder }) => {
                     margin="normal"
                 />
 
-
                 <Button type="submit" variant="contained" color="primary">
                     {isEdit ? 'Save Changes' : 'Add Order'}
                 </Button>
             </Box>
 
-            {/*DELETE MODAL*/}
-            <Dialog open={modalDeleteOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
-                <DialogTitle>{`Delete Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to delete the detail product "{selectedOrderDetail?.product.name}"?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseModal} color="primary">
-                        Cancel
-                    </Button>
-                    <Button onClick={() => handleOrderDetailDeleted(selectedOrderDetail)} color="secondary" autoFocus>
-                        Delete
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-
-            {/*UPDATE MODAL*/}
-            <Dialog open={modalUpdateOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
-                <DialogTitle>{`Update Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        label="Product Name"
-                        name="name"
-                        value={selectedOrderDetail?.product.name}
-                        InputProps={{
-                            readOnly: true,
-                        }}
-                        fullWidth
-                        margin="normal"
-                    />
-                    <TextField
-                        label="Quantity"
-                        name="numberOfProducts"
-                        type="number"
-                        value={selectedOrderDetail?.quantity}
-                        onChange={handleOrderDetailInputChange}
-                        fullWidth
-                        margin="normal"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseModal} color="primary">
-                        Cancel
-                    </Button>
-                    <Button onClick={() => handleOrderDetailUpdated(selectedOrderDetail)} color="secondary" autoFocus>
-                        Update
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-
-            {/*Add a new order detail*/}
+            {/*MODALS*/}
+            {/*ADD ORDER DETAIL MODAL*/}
             <Dialog open={modalAddOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
                 <DialogTitle>{`Add Order Detail`}</DialogTitle>
                 <DialogContent>
@@ -421,6 +381,60 @@ const OrderForm = ({ order: initialOrder }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/*UPDATE ORDER DETAIL MODAL*/}
+            <Dialog open={modalUpdateOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
+                <DialogTitle>{`Update Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Product Name"
+                        name="name"
+                        value={selectedOrderDetail?.product.name}
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="Quantity"
+                        name="numberOfProducts"
+                        type="number"
+                        value={selectedOrderDetail?.quantity}
+                        onChange={handleOrderDetailInputChange}
+                        fullWidth
+                        margin="normal"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={() => handleOrderDetailUpdated(selectedOrderDetail)} color="secondary" autoFocus>
+                        Update
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+
+            {/*DELETE ORDER DETAIL MODAL*/}
+            <Dialog open={modalDeleteOrderDetailOpen && order.status !== "Completed"} onClose={handleCloseModal}>
+                <DialogTitle>{`Delete Order Detail ${selectedOrderDetail?.id}`}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete the detail product "{selectedOrderDetail?.product.name}"?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={() => handleOrderDetailDeleted(selectedOrderDetail)} color="secondary" autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </form>
     );
 };
