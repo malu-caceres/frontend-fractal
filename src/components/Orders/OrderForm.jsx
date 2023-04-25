@@ -51,7 +51,6 @@ const OrderForm = ({ order: initialOrder }) => {
 
     const handleDeleteOrderDetailButtonClick = (orderDetail) => {
         setSelectedOrderDetail(orderDetail);
-        console.log(selectedOrderDetail)
         setModalDeleteOrderDetailOpen(true);
     };
 
@@ -74,8 +73,6 @@ const OrderForm = ({ order: initialOrder }) => {
             productId: selectedOrderDetail.product.id,
             quantity: parseInt(event.target.value),
         }));
-
-        console.log(selectedOrderDetail)
     };
 
     const handleSubmit = async (event) => {
@@ -92,7 +89,6 @@ const OrderForm = ({ order: initialOrder }) => {
 
 
     const handleCloseModal = () => {
-        setSelectedOrderDetail(null);
         setModalDeleteOrderDetailOpen(false);
         setModalUpdateOrderDetailOpen(false);
     };
@@ -116,18 +112,18 @@ const OrderForm = ({ order: initialOrder }) => {
     const handleOrderDetailUpdated = async (updatedOrderDetail) => {
         updatedOrderDetail.orderId = order.id
         updatedOrderDetail.productId = updatedOrderDetail.product.id
-
         console.log(updatedOrderDetail)
         await updateOrderDetail(updatedOrderDetail.id, updatedOrderDetail);
+
+        const changedObject = order.orderDetails.find(o => o.id === selectedOrderDetail.id)
+        const changedIndex = order.orderDetails.indexOf(changedObject)
+
+        order.orderDetails[changedIndex]=updatedOrderDetail
 
         let newFinalPrice = 0
         order.orderDetails.map((orderDetail) => (
             newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
         ))
-        const changedObject = order.orderDetails.find(o => o.id === selectedOrderDetail.id)
-        const changedIndex = order.orderDetails.indexOf(changedObject)
-        console.log("dsfas",newFinalPrice)
-        order.orderDetails[changedIndex]=selectedOrderDetail
         setOrder((prevOrder) => ({
             ...prevOrder,
             numberOfProducts: order.orderDetails.length,
