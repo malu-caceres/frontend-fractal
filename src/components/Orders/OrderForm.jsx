@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {useHistory, useParams} from 'react-router-dom';
 import {
     Box,
-    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-    MenuItem,
+    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, InputLabel,
+    MenuItem, Select,
     Table, TableBody,
     TableCell, TableContainer,
     TableHead,
@@ -11,15 +11,20 @@ import {
     TextField
 } from '@material-ui/core';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
-import {deleteOrderDetail, updateOrderDetail} from "../../api/orderDetails";
+import {deleteOrderDetail, updateOrderDetail, createOrderDetail} from "../../api/orderDetails";
+import {getAllProducts} from "../../api/products";
 const OrderForm = ({ order: initialOrder }) => {
-
+    const [products, setProducts] = useState([]);
     const statusOptions = ['Pending', 'InProgress', 'Completed'];
     const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
+    const [newOrderDetails, setNewOrderDetails] = useState([]);
     const [modalDeleteOrderDetailOpen, setModalDeleteOrderDetailOpen] = useState(false);
     const [modalUpdateOrderDetailOpen, setModalUpdateOrderDetailOpen] = useState(false);
+    const [modalAddOrderDetailOpen, setModalAddOrderDetailOpen] = useState(false);
     const history = useHistory();
     const { id } = useParams();
+    const [selectedProduct, setSelectedProduct] = useState('');
+    const [selectedProductQuantity, setSelectedProductQuantity] = useState('');
     const [order, setOrder] = useState(initialOrder || {
         orderNumber: '',
         finalPrice: '0',
@@ -29,6 +34,11 @@ const OrderForm = ({ order: initialOrder }) => {
     const isEdit = id !== undefined;
     const [currentDate, setCurrentDate] = useState('');
     useEffect(() => {
+        const fetchProducts = async () => {
+            const productList = await getAllProducts();
+            setProducts(productList);
+        };
+        fetchProducts();
         const fetchOrder = async () => {
             const order = await getOrderById(id);
             setOrder(order);
@@ -54,6 +64,12 @@ const OrderForm = ({ order: initialOrder }) => {
         setModalDeleteOrderDetailOpen(true);
     };
 
+    const handleAddOrderDetailButtonClick = () => {
+
+        console.log("llego aki")
+        setModalAddOrderDetailOpen(true);
+    };
+
     const handleUpdateOrderDetailButtonClick = (orderDetail) => {
         setSelectedOrderDetail(orderDetail);
         setModalUpdateOrderDetailOpen(true);
@@ -67,12 +83,25 @@ const OrderForm = ({ order: initialOrder }) => {
     };
 
     const handleOrderDetailInputChange = (event) => {
-        setSelectedOrderDetail((prevOrderDetail) => ({
-            ...prevOrderDetail,
-            orderId: order.id,
-            productId: selectedOrderDetail.product.id,
-            quantity: parseInt(event.target.value),
-        }));
+        if (modalUpdateOrderDetailOpen){
+            setSelectedOrderDetail((prevOrderDetail) => ({
+                ...prevOrderDetail,
+                orderId: order.id,
+                productId: selectedOrderDetail.product.id,
+                quantity: parseInt(event.target.value),
+            }));
+        }
+        if (modalAddOrderDetailOpen){
+            console.log(selectedProduct)
+            console.log(selectedOrderDetail)
+            console.log(event)
+            setSelectedOrderDetail((prevOrderDetail) => ({
+                ...prevOrderDetail,
+                orderId: order.id,
+                productId: selectedProduct,
+                quantity: parseInt(event.target.value),
+            }));
+        }
     };
 
     const handleSubmit = async (event) => {
@@ -87,10 +116,16 @@ const OrderForm = ({ order: initialOrder }) => {
         history.push('/my-orders');
     };
 
-
+    const handleProductChange = (event) => {
+        setSelectedProduct(event.target.value);
+    };
+    const handleProductQuantityChange = (event) => {
+        setSelectedProductQuantity(event.target.value);
+    };
     const handleCloseModal = () => {
         setModalDeleteOrderDetailOpen(false);
         setModalUpdateOrderDetailOpen(false);
+        setModalAddOrderDetailOpen(false);
     };
 
     const handleOrderDetailDeleted = async (deletedOrderDetail) => {
@@ -129,6 +164,33 @@ const OrderForm = ({ order: initialOrder }) => {
             numberOfProducts: order.orderDetails.length,
             finalPrice: newFinalPrice
         }));
+
+        handleCloseModal();
+    };
+
+    const handleOrderDetailCreated = async () => {
+        if (isEdit){
+            let newOrderDetail = {
+                orderId: order.id,
+                productId: selectedProduct,
+                quantity: parseInt(selectedProductQuantity)
+            }
+            console.log(newOrderDetail)
+            newOrderDetail = await createOrderDetail(newOrderDetail);
+            order.orderDetails.push(newOrderDetail)
+
+            let newFinalPrice = 0
+            order.orderDetails.map((orderDetail) => (
+                newFinalPrice += orderDetail.product.unitPrice * orderDetail.quantity
+            ))
+            setOrder((prevOrder) => ({
+                ...prevOrder,
+                numberOfProducts: order.orderDetails.length,
+                finalPrice: newFinalPrice
+            }));
+            handleCloseModal();
+        }
+
 
         handleCloseModal();
     };
@@ -216,11 +278,16 @@ const OrderForm = ({ order: initialOrder }) => {
                             ))}
                         </TableBody>
                     </Table>
+
+                    <Button
+                            variant="contained"
+                            onClick={() => handleAddOrderDetailButtonClick()}
+                    >
+                        Add Order Detail
+                    </Button>
                 </TableContainer>
 
-                <Button type="submit" variant="contained">
-                    Add Order Detail
-                </Button>
+
 
                 <TextField
                     label="Number of Products"
@@ -301,6 +368,47 @@ const OrderForm = ({ order: initialOrder }) => {
                     </Button>
                     <Button onClick={() => handleOrderDetailUpdated(selectedOrderDetail)} color="secondary" autoFocus>
                         Update
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+
+            {/*Add a new order detail*/}
+            <Dialog open={modalAddOrderDetailOpen} onClose={handleCloseModal}>
+                <DialogTitle>{`Add Order Detail`}</DialogTitle>
+                <DialogContent>
+                    <InputLabel id="product-label">Product</InputLabel>
+                    <Select
+                        labelId="product-label"
+                        id="product-select"
+                        value={selectedProduct}
+                        onChange={handleProductChange}
+                    >
+                        <MenuItem value="">
+                            <em>Select a product</em>
+                        </MenuItem>
+                        {products.map((product) => (
+                            <MenuItem key={product.id} value={product.id}>
+                                {product.name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                    <TextField
+                        label="Quantity"
+                        name="numberOfProducts"
+                        type="number"
+                        value={selectedProductQuantity}
+                        onChange={handleProductQuantityChange}
+                        fullWidth
+                        margin="normal"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={() => handleOrderDetailCreated()} color="secondary" autoFocus>
+                        Add
                     </Button>
                 </DialogActions>
             </Dialog>
